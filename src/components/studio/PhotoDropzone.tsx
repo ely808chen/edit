@@ -80,7 +80,7 @@ export function PhotoDropzone({ onFiles, disabled }: Props) {
         }}
       />
       <p className="font-[family-name:var(--font-newsreader)] text-3xl text-ink sm:text-4xl">
-        Drop 12–20 photos
+        Drop 2–20 photos
       </p>
       <p className="text-sm text-[var(--muted)]">JPEG, PNG or WebP</p>
       <Button

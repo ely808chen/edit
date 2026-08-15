@@ -8,7 +8,7 @@ const ctaClass =
 
 export function DifferenceSection() {
   return (
-    <section id="why-sets" className="border-b border-[var(--line)]">
+    <section id="not-a-score" className="border-b border-[var(--line)]">
       <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
         <h2 className="font-[family-name:var(--font-newsreader)] text-3xl text-ink sm:text-4xl">
           Not a score

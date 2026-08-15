@@ -15,7 +15,7 @@ export const EditRoleSchema = z.enum([
 ])
 
 export const SequenceItemSchema = z.object({
-  position: z.number().int().min(1).max(8),
+  position: z.number().int().min(1).max(20),
   photoId: z.string(),
   role: EditRoleSchema,
   reason: z.string().min(20).max(360),
@@ -31,14 +31,13 @@ export const NotableCutSchema = z.object({
 export const EditResultSchema = z.object({
   version: z.literal(1),
   editSummary: z.string().min(40).max(500),
-  sequence: z.array(SequenceItemSchema).min(4).max(8),
-  notableCuts: z.array(NotableCutSchema).max(8),
+  sequence: z.array(SequenceItemSchema).min(1).max(20),
+  notableCuts: z.array(NotableCutSchema).max(20),
   setNotes: z.object({
     strengths: z.array(z.string()).max(4),
     watchouts: z.array(z.string()).max(4),
   }),
 })
-
 export type EditMode = z.infer<typeof EditModeSchema>
 export type EditRole = z.infer<typeof EditRoleSchema>
 export type SequenceItem = z.infer<typeof SequenceItemSchema>
@@ -56,7 +55,7 @@ export const PreferenceEventPayloadSchema = z.object({
   id: z.string(),
   timestamp: z.string(),
   mode: EditModeSchema,
-  position: z.number().int().min(1).max(8),
+  position: z.number().int().min(1).max(20),
   role: z.string(),
   aiSelected: z.object({
     thumbnailDataUrl: z.string(),
@@ -71,25 +70,34 @@ export type PreferenceEventPayload = z.infer<
   typeof PreferenceEventPayloadSchema
 >
 
-export const EditRequestSchema = z.object({
-  sessionId: z.string().min(8).max(128),
-  mode: EditModeSchema,
-  targetCount: z.number().int().min(4).max(8),
-  photos: z
-    .array(
-      z.object({
-        id: z.string().regex(/^p\d{2}$/),
-        pathname: z.string().min(1),
-        width: z.number().positive(),
-        height: z.number().positive(),
-      }),
-    )
-    .min(12)
-    .max(20),
-  preferences: z.array(PreferenceEventPayloadSchema).max(3).optional(),
-  strategy: z.literal("adaptive").optional(),
-})
-
+export const EditRequestSchema = z
+  .object({
+    sessionId: z.string().min(8).max(128),
+    mode: EditModeSchema,
+    targetCount: z.number().int().min(1).max(20),
+    photos: z
+      .array(
+        z.object({
+          id: z.string().regex(/^p\d{2}$/),
+          pathname: z.string().min(1),
+          width: z.number().positive(),
+          height: z.number().positive(),
+        }),
+      )
+      .min(2)
+      .max(20),
+    preferences: z.array(PreferenceEventPayloadSchema).max(3).optional(),
+    strategy: z.literal("adaptive").optional(),
+  })
+  .superRefine((value, ctx) => {
+    if (value.targetCount > value.photos.length) {
+      ctx.addIssue({
+        code: "custom",
+        message: "targetCount cannot exceed the number of uploaded photos",
+        path: ["targetCount"],
+      })
+    }
+  })
 export type EditRequest = z.infer<typeof EditRequestSchema>
 
 export const InspectionLogItemSchema = z.object({
