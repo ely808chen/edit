@@ -1,0 +1,56 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f4f1e9;
+  --surface: #fbfaf6;
+  --ink: #111111;
+  --muted: #76736c;
+  --line: #d8d4ca;
+  --darkroom: #0b0b0b;
+  --darkroom-surface: #151515;
+  --darkroom-muted: #8b8b82;
+  --accent: #d7ff43;
+  --danger: #e85b45;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-darkroom: var(--darkroom);
+  --color-darkroom-surface: var(--darkroom-surface);
+  --color-darkroom-muted: var(--darkroom-muted);
+  --color-accent: var(--accent);
+  --color-danger: var(--danger);
+  --font-sans: var(--font-geist-sans);
+  --font-serif: var(--font-newsreader);
+  --font-mono: var(--font-geist-mono);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--background);
+  color: var(--ink);
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--accent) 55%, white);
+  color: var(--ink);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

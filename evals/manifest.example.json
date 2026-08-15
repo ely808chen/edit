@@ -1,0 +1,15 @@
+{
+  "shoots": [
+    {
+      "id": "tokyo-night",
+      "directory": "./evals/shoots/tokyo-night",
+      "mode": "photography",
+      "targetCount": 6,
+      "groundTruth": {
+        "mustInclude": ["IMG_001.jpg", "IMG_007.jpg"],
+        "acceptable": ["IMG_009.jpg", "IMG_011.jpg"],
+        "mustExclude": ["IMG_004.jpg"]
+      }
+    }
+  ]
+}
