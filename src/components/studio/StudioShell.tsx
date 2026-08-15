@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import {
   useCallback,
   useMemo,
@@ -7,6 +8,7 @@ import {
   useRef,
   useState,
 } from "react"
+import { ArrowLeft } from "lucide-react"
 import { upload } from "@vercel/blob/client"
 import { AnalysisState } from "@/components/studio/AnalysisState"
 import { ContactSheet } from "@/components/studio/ContactSheet"
@@ -30,6 +32,10 @@ import {
   preprocessPhotoFile,
 } from "@/lib/images/preprocess-client"
 import {
+  MAX_CANDIDATE_PHOTOS,
+  MIN_CANDIDATE_PHOTOS,
+} from "@/lib/limits"
+import {
   getRecentPreferenceEvents,
   savePreferenceEvent,
 } from "@/lib/preferences/preference-memory"
@@ -46,8 +52,6 @@ function sessionPhotoPathname(sessionId: string, photoId: string): string {
 }
 
 const ACCEPTED = new Set(["image/jpeg", "image/png", "image/webp"])
-const MAX_PHOTOS = 20
-const MIN_PHOTOS = 12
 
 function analysisMessage(
   phase: string,
@@ -82,9 +86,15 @@ export function StudioShell() {
 
   const canSubmit = useMemo(() => {
     const { photos } = state
-    if (photos.length < MIN_PHOTOS || photos.length > MAX_PHOTOS) return false
+    if (
+      photos.length < MIN_CANDIDATE_PHOTOS ||
+      photos.length > MAX_CANDIDATE_PHOTOS
+    ) {
+      return false
+    }
     if (photos.some((p) => p.uploadStatus === "processing")) return false
     if (photos.some((p) => p.uploadStatus === "error")) return false
+    if (state.targetCount < 1 || state.targetCount > photos.length) return false
     return photos.every(
       (p) =>
         p.uploadStatus === "local" ||
@@ -98,7 +108,7 @@ export function StudioShell() {
       const imageFiles = files.filter((file) => ACCEPTED.has(file.type))
       if (imageFiles.length === 0) return
 
-      const remaining = MAX_PHOTOS - state.photos.length
+      const remaining = MAX_CANDIDATE_PHOTOS - state.photos.length
       if (remaining <= 0) {
         dispatch({ type: "SET_ERROR", error: copy.tooMany })
         return
@@ -107,8 +117,6 @@ export function StudioShell() {
       const batch = imageFiles.slice(0, remaining)
       if (imageFiles.length > remaining) {
         dispatch({ type: "SET_ERROR", error: copy.tooMany })
-      } else if (state.error) {
-        // clear prior soft errors when adding more photos via SET_PHOTOS path
       }
 
       const startIndex = state.photos.length
@@ -159,14 +167,14 @@ export function StudioShell() {
         }),
       )
     },
-    [state.photos, state.error],
+    [state.photos],
   )
 
   const buildEdit = useCallback(async () => {
     if (!canSubmit) {
-      if (state.photos.length < MIN_PHOTOS) {
+      if (state.photos.length < MIN_CANDIDATE_PHOTOS) {
         dispatch({ type: "SET_ERROR", error: copy.tooFew })
-      } else if (state.photos.length > MAX_PHOTOS) {
+      } else if (state.photos.length > MAX_CANDIDATE_PHOTOS) {
         dispatch({ type: "SET_ERROR", error: copy.tooMany })
       }
       return
@@ -389,23 +397,48 @@ export function StudioShell() {
   return (
     <div className="min-h-screen bg-[var(--background)] text-ink">
       <header className="sticky top-0 z-20 border-b border-[var(--line)] bg-[var(--background)]/95 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 sm:px-6">
-          <p className="text-sm font-medium tracking-[0.08em]">{APP_NAME}</p>
-          <Button
-            variant="ghost"
-            className="text-xs uppercase tracking-[0.14em]"
-            onClick={() => {
-              for (const photo of state.photos) {
-                if (photo.previewUrl.startsWith("blob:")) {
-                  URL.revokeObjectURL(photo.previewUrl)
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-4 sm:px-6">
+          <div className="flex min-w-0 items-center gap-3 sm:gap-4">
+            <Link
+              href="/"
+              className="inline-flex items-center gap-1.5 text-xs uppercase tracking-[0.14em] text-[var(--muted)] transition hover:text-ink focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
+            >
+              <ArrowLeft size={14} aria-hidden />
+              <span className="hidden sm:inline">Home</span>
+            </Link>
+            <span className="text-[var(--line)]" aria-hidden>
+              /
+            </span>
+            <p className="truncate text-sm font-medium tracking-[0.08em]">
+              {APP_NAME}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            {state.phase === "results" ? (
+              <Button
+                variant="secondary"
+                className="hidden text-xs uppercase tracking-[0.14em] sm:inline-flex"
+                onClick={() => dispatch({ type: "RETURN_TO_SHEET" })}
+              >
+                Back to sheet
+              </Button>
+            ) : null}
+            <Button
+              variant="ghost"
+              className="text-xs uppercase tracking-[0.14em]"
+              onClick={() => {
+                for (const photo of state.photos) {
+                  if (photo.previewUrl.startsWith("blob:")) {
+                    URL.revokeObjectURL(photo.previewUrl)
+                  }
                 }
-              }
-              dispatch({ type: "RESET" })
-              setLightboxIndex(null)
-            }}
-          >
-            New edit
-          </Button>
+                dispatch({ type: "RESET" })
+                setLightboxIndex(null)
+              }}
+            >
+              New edit
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -450,14 +483,10 @@ export function StudioShell() {
           <div className="space-y-8">
             <ContactSheet
               photos={state.photos}
-              disabled={busy}
-              onRemove={(id) => {
-                const photo = state.photos.find((p) => p.id === id)
-                if (photo?.previewUrl.startsWith("blob:")) {
-                  URL.revokeObjectURL(photo.previewUrl)
-                }
-                dispatch({ type: "REMOVE_PHOTO", id })
-              }}
+              disabled={
+                state.phase === "uploading" || state.phase === "analyzing"
+              }
+              onRemove={(id) => dispatch({ type: "REMOVE_PHOTO", id })}
               onClear={() => dispatch({ type: "CLEAR_PHOTOS" })}
               onOpen={(id) => {
                 const index = state.photos.findIndex((p) => p.id === id)
@@ -465,10 +494,10 @@ export function StudioShell() {
               }}
             />
 
-            {state.photos.length < MIN_PHOTOS ? (
+            {state.photos.length < MIN_CANDIDATE_PHOTOS ? (
               <p className="text-sm text-[var(--muted)]">{copy.tooFew}</p>
             ) : null}
-            {state.photos.length > MAX_PHOTOS ? (
+            {state.photos.length > MAX_CANDIDATE_PHOTOS ? (
               <p className="text-sm text-[var(--danger)]">{copy.tooMany}</p>
             ) : null}
 
@@ -479,7 +508,7 @@ export function StudioShell() {
                 accept="image/jpeg,image/png,image/webp"
                 multiple
                 className="sr-only"
-                disabled={busy || state.photos.length >= MAX_PHOTOS}
+                disabled={busy || state.photos.length >= MAX_CANDIDATE_PHOTOS}
                 onChange={(e) => {
                   if (e.target.files) void processFiles(Array.from(e.target.files))
                   e.target.value = ""
@@ -487,19 +516,21 @@ export function StudioShell() {
               />
               <Button
                 variant="secondary"
-                disabled={busy || state.photos.length >= MAX_PHOTOS}
+                disabled={busy || state.photos.length >= MAX_CANDIDATE_PHOTOS}
                 onClick={() => addInputRef.current?.click()}
               >
                 Add photos
               </Button>
               <p className="text-xs text-[var(--muted)]">
-                JPEG, PNG or WebP · originals stay local
+                JPEG, PNG or WebP · originals stay local · {state.photos.length}/
+                {MAX_CANDIDATE_PHOTOS}
               </p>
             </div>
 
             <EditSettings
               mode={state.mode}
               targetCount={state.targetCount}
+              photoCount={state.photos.length}
               onModeChange={(mode) => dispatch({ type: "SET_MODE", mode })}
               onTargetChange={(targetCount) =>
                 dispatch({ type: "SET_TARGET_COUNT", targetCount })

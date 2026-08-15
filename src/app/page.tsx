@@ -1,33 +1,35 @@
 import Link from "next/link"
 import { DifferenceSection } from "@/components/landing/DifferenceSection"
+import { FrustrationSection } from "@/components/landing/FrustrationSection"
 import { Hero } from "@/components/landing/Hero"
 import { ProblemSection } from "@/components/landing/ProblemSection"
+import { SatisfactionSection } from "@/components/landing/SatisfactionSection"
 import { APP_NAME, copy } from "@/lib/brand"
 
 export default function HomePage() {
   return (
     <div className="flex min-h-full flex-col">
-      <header className="sticky top-0 z-40 border-b border-[var(--line)] bg-[color-mix(in_srgb,var(--background)_92%,white)] backdrop-blur-sm">
+      <header className="sticky top-0 z-40 border-b border-white/10 bg-[var(--darkroom)]/90 text-white backdrop-blur-sm">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
           <Link
             href="/"
-            className="text-sm font-semibold tracking-[0.14em] text-ink"
+            className="text-sm font-semibold tracking-[0.14em] text-white"
           >
             {APP_NAME}
           </Link>
-          <nav className="flex items-center gap-4 text-sm text-[var(--muted)] sm:gap-6">
-            <a href="#how-it-works" className="hover:text-ink">
-              How it works
+          <nav className="flex items-center gap-4 text-sm text-white/60 sm:gap-6">
+            <a href="#the-night" className="hover:text-white">
+              The night
             </a>
             <a
-              href="#why-sets"
-              className="hidden hover:text-ink sm:inline"
+              href="#how-it-works"
+              className="hidden hover:text-white sm:inline"
             >
-              Why sets matter
+              The edit
             </a>
             <Link
               href="/studio"
-              className="rounded-sm bg-ink px-3 py-2 text-[var(--background)] transition hover:bg-black focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
+              className="rounded-sm bg-[var(--accent)] px-3 py-2 font-medium text-ink transition hover:brightness-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
             >
               Open editor →
             </Link>
@@ -37,6 +39,8 @@ export default function HomePage() {
 
       <main className="flex-1">
         <Hero />
+        <FrustrationSection />
+        <SatisfactionSection />
         <ProblemSection />
         <DifferenceSection />
       </main>

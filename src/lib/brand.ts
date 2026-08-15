@@ -2,12 +2,13 @@ export const APP_NAME =
   process.env.NEXT_PUBLIC_APP_NAME?.trim() || "EDIT."
 
 export const copy = {
-  promise: "Turn twenty good photos into the six that belong together",
+  promise: "Turn a pile of good photos into the few that belong together",
   tagline: "Not a score. Not a cull. A visual edit",
-  heroHeadline:
-    "The hard part isn’t deleting bad photos. It’s choosing between the good ones.",
+  heroEyebrow: "For the night after the trip",
+  heroHeadline: "You already deleted the bad ones.",
+  heroHeadlineAccent: "Now comes the part that ruins the evening.",
   heroBody:
-    "EDIT. looks at the whole shoot, makes the close calls, and builds a final sequence — not a pile of photo scores",
+    "Twenty frames. All good. None obvious. EDIT. builds the set — what stays, what goes, and in what order — so you stop arguing with a chatbot about photo 7 versus photo 12.",
   privacy:
     "Original files stay on your device. Smaller working copies are uploaded temporarily for analysis",
   privacyCleanup:
@@ -15,7 +16,7 @@ export const copy = {
   studioEmptyHeading: "What belongs together?",
   studioEmptySub:
     "Start with the photos you already like. The editor’s job begins after the obvious cuts",
-  tooFew: "Add at least 12 candidates so the editor has a meaningful set to work with",
+  tooFew: "Add at least 2 candidates to build an edit",
   tooMany: "Start with your strongest 20 candidates for this first edit",
   uploadFail:
     "One working copy couldn’t be uploaded. Remove it or try again",
@@ -24,4 +25,6 @@ export const copy = {
   invalidResult:
     "The editor returned an incomplete sequence. Try this edit again",
   demoLocked: "This demo is access-controlled",
+  frustrationLabel: "Familiar?",
+  satisfactionLabel: "What you actually wanted",
 } as const

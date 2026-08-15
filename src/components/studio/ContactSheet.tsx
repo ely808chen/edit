@@ -1,6 +1,6 @@
 "use client"
 
-import { X } from "lucide-react"
+import { Trash2, X } from "lucide-react"
 import { Button } from "@/components/ui/Button"
 import { cn } from "@/lib/utils/cn"
 import type { ClientPhoto } from "@/types"
@@ -49,7 +49,15 @@ export function ContactSheet({
         <Button
           variant="ghost"
           disabled={disabled}
-          onClick={onClear}
+          onClick={() => {
+            if (
+              typeof window !== "undefined" &&
+              !window.confirm("Clear all photos from this edit?")
+            ) {
+              return
+            }
+            onClear()
+          }}
           className="text-xs uppercase tracking-[0.14em]"
         >
           Clear all
@@ -89,14 +97,14 @@ export function ContactSheet({
                 />
               </button>
 
-              <figcaption className="pointer-events-none absolute left-2 top-2 bg-[var(--darkroom)]/75 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-[0.16em] text-white">
+              <figcaption className="pointer-events-none absolute left-2 top-2 bg-[var(--darkroom)]/80 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-[0.16em] text-white">
                 {photo.id.toUpperCase()}
               </figcaption>
 
               {status ? (
                 <span
                   className={cn(
-                    "pointer-events-none absolute bottom-2 left-2 right-8 truncate text-[10px] uppercase tracking-[0.12em]",
+                    "pointer-events-none absolute bottom-2 left-2 right-10 truncate text-[10px] uppercase tracking-[0.12em]",
                     isError ? "text-[var(--danger)]" : "text-white/80",
                   )}
                 >
@@ -107,16 +115,27 @@ export function ContactSheet({
               <button
                 type="button"
                 aria-label={`Remove ${photo.id.toUpperCase()}`}
+                title="Remove photo"
                 disabled={disabled}
-                onClick={() => onRemove(photo.id)}
-                className="absolute right-1.5 top-1.5 rounded-sm bg-[var(--darkroom)]/70 p-1 text-white opacity-100 transition hover:bg-[var(--darkroom)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] sm:opacity-0 sm:group-hover:opacity-100"
+                onClick={(event) => {
+                  event.preventDefault()
+                  event.stopPropagation()
+                  onRemove(photo.id)
+                }}
+                className="absolute right-1.5 top-1.5 z-10 inline-flex min-h-9 min-w-9 items-center justify-center rounded-sm bg-black/75 text-white shadow-sm transition hover:bg-[var(--danger)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] disabled:cursor-not-allowed disabled:opacity-40"
               >
-                <X size={14} />
+                <X size={16} strokeWidth={2.25} />
+                <span className="sr-only">Remove</span>
               </button>
             </figure>
           )
         })}
       </div>
+
+      <p className="flex items-center gap-2 text-xs text-[var(--muted)]">
+        <Trash2 size={12} aria-hidden />
+        Tap the × on a frame to remove it from this edit.
+      </p>
     </section>
   )
 }

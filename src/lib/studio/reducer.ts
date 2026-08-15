@@ -1,5 +1,6 @@
 import type { EditMode } from "@/lib/ai/schemas"
 import type { EditResponse, ClientPhoto, StudioPhase, StudioState } from "@/types"
+import { clampTargetCount, MIN_CANDIDATE_PHOTOS, MAX_CANDIDATE_PHOTOS } from "@/lib/limits"
 import { createSessionId } from "@/lib/utils/ids"
 
 export function createInitialStudioState(): StudioState {
@@ -30,6 +31,7 @@ export type StudioAction =
   | { type: "SET_UPLOAD_PROGRESS"; done: number; total: number }
   | { type: "SET_RESULT"; result: EditResponse }
   | { type: "SET_ERROR"; error: string }
+  | { type: "RETURN_TO_SHEET" }
   | { type: "REORDER_SEQUENCE"; photoIds: string[] }
   | {
       type: "REPLACE_IN_SEQUENCE"
@@ -39,20 +41,39 @@ export type StudioAction =
     }
   | { type: "SET_REPLACEMENT_TARGET"; photoId: string | null }
 
+function withClampedTarget(
+  photos: ClientPhoto[],
+  targetCount: number,
+): number {
+  return clampTargetCount(targetCount, photos.length)
+}
+
 function derivePhase(photos: ClientPhoto[]): StudioPhase {
   if (photos.length === 0) return "empty"
   if (photos.some((p) => p.uploadStatus === "processing")) return "preparing"
   if (
-    photos.length >= 12 &&
-    photos.length <= 20 &&
-    photos.every((p) => p.uploadStatus === "local" || p.uploadStatus === "uploaded")
+    photos.length >= MIN_CANDIDATE_PHOTOS &&
+    photos.length <= MAX_CANDIDATE_PHOTOS &&
+    photos.every(
+      (p) => p.uploadStatus === "local" || p.uploadStatus === "uploaded",
+    )
   ) {
     return "ready"
   }
   if (photos.some((p) => p.uploadStatus === "error")) return "ready"
+  if (
+    photos.length > 0 &&
+    photos.every(
+      (p) =>
+        p.uploadStatus === "local" ||
+        p.uploadStatus === "uploaded" ||
+        p.uploadStatus === "error",
+    )
+  ) {
+    return "ready"
+  }
   return "preparing"
 }
-
 export function studioReducer(
   state: StudioState,
   action: StudioAction,
@@ -67,6 +88,7 @@ export function studioReducer(
       return {
         ...state,
         photos,
+        targetCount: withClampedTarget(photos, state.targetCount),
         phase: derivePhase(photos),
         result: null,
         error: null,
@@ -84,6 +106,7 @@ export function studioReducer(
       return {
         ...state,
         photos: next,
+        targetCount: withClampedTarget(next, state.targetCount),
         phase:
           state.phase === "uploading" ||
           state.phase === "analyzing" ||
@@ -93,10 +116,15 @@ export function studioReducer(
       }
     }
     case "REMOVE_PHOTO": {
+      const removed = state.photos.find((p) => p.id === action.id)
+      if (removed?.previewUrl.startsWith("blob:")) {
+        URL.revokeObjectURL(removed.previewUrl)
+      }
       const photos = state.photos.filter((p) => p.id !== action.id)
       return {
         ...state,
         photos,
+        targetCount: withClampedTarget(photos, state.targetCount),
         phase: derivePhase(photos),
         result: null,
       }
@@ -110,6 +138,7 @@ export function studioReducer(
       return {
         ...state,
         photos: [],
+        targetCount: 6,
         phase: "empty",
         result: null,
         error: null,
@@ -121,7 +150,10 @@ export function studioReducer(
     case "SET_MODE":
       return { ...state, mode: action.mode }
     case "SET_TARGET_COUNT":
-      return { ...state, targetCount: action.targetCount }
+      return {
+        ...state,
+        targetCount: withClampedTarget(state.photos, action.targetCount),
+      }
     case "SET_UPLOAD_PROGRESS":
       return {
         ...state,
@@ -144,6 +176,16 @@ export function studioReducer(
         phase: "error",
         error: action.error,
         uploadProgress: null,
+      }
+    case "RETURN_TO_SHEET":
+      return {
+        ...state,
+        phase: derivePhase(state.photos),
+        result: null,
+        error: null,
+        replacementTargetPhotoId: null,
+        userModifiedSequence: false,
+        userEditedPhotoIds: new Set(),
       }
     case "REORDER_SEQUENCE": {
       if (!state.result) return state

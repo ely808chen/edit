@@ -1,96 +1,139 @@
 "use client"
 
 import Link from "next/link"
-import { APP_NAME, copy } from "@/lib/brand"
+import { copy } from "@/lib/brand"
 import { cn } from "@/lib/utils/cn"
 
-const SAMPLE_ROLES = [
-  "Lead",
-  "Human scale",
-  "Detail",
-  "Transition",
-  "Anchor",
-  "Close",
-] as const
-
 const ctaClass =
-  "inline-flex items-center justify-center gap-2 rounded-sm bg-ink px-4 py-2.5 text-sm font-medium tracking-wide text-[var(--background)] transition hover:bg-black focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
+  "inline-flex items-center justify-center gap-2 rounded-sm bg-[var(--accent)] px-5 py-3 text-sm font-semibold tracking-wide text-ink transition hover:brightness-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+
+const CHAOS_LABELS = [
+  "3 or 7?",
+  "Same corner…",
+  "Keep both?",
+  "Which opener?",
+  "Too similar",
+  "Maybe later",
+]
 
 export function Hero() {
   return (
-    <section className="relative overflow-hidden border-b border-[var(--line)]">
+    <section className="relative overflow-hidden bg-[var(--darkroom)] text-white">
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(215,255,67,0.12),_transparent_55%),linear-gradient(180deg,_rgba(11,11,11,0.03),_transparent_40%)]"
+        className="pointer-events-none absolute inset-0 opacity-40"
+        style={{
+          backgroundImage:
+            "radial-gradient(ellipse 80% 50% at 20% 0%, rgba(215,255,67,0.16), transparent 55%), radial-gradient(ellipse 60% 40% at 90% 80%, rgba(255,255,255,0.06), transparent 50%)",
+        }}
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 opacity-[0.07]"
+        style={{
+          backgroundImage:
+            "repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,0.4) 3px)",
+        }}
       />
 
-      <div className="relative mx-auto grid max-w-6xl gap-12 px-4 py-16 sm:px-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-center lg:py-24">
-        <div className="space-y-6">
-          <p className="text-sm font-medium tracking-[0.12em] text-ink">
-            {APP_NAME}
+      <div className="relative mx-auto grid max-w-6xl gap-12 px-4 pb-16 pt-14 sm:px-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-end lg:pb-24 lg:pt-20">
+        <div className="space-y-7">
+          <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-[var(--accent)]">
+            {copy.heroEyebrow}
           </p>
-          <h1 className="max-w-xl font-[family-name:var(--font-newsreader)] text-4xl leading-[1.12] text-ink sm:text-5xl lg:text-[3.35rem]">
-            {copy.heroHeadline}
+          <h1 className="max-w-xl font-[family-name:var(--font-newsreader)] text-[2.35rem] leading-[1.08] tracking-tight sm:text-5xl lg:text-[3.4rem]">
+            <span className="block text-white/90">{copy.heroHeadline}</span>
+            <span className="mt-2 block text-[var(--accent)]">
+              {copy.heroHeadlineAccent}
+            </span>
           </h1>
-          <p className="max-w-lg font-[family-name:var(--font-newsreader)] text-2xl leading-snug text-ink/90 sm:text-3xl">
-            {copy.promise}
-          </p>
-          <p className="max-w-md text-base leading-relaxed text-[var(--muted)]">
+          <p className="max-w-lg text-base leading-relaxed text-[var(--darkroom-muted)] sm:text-lg">
             {copy.heroBody}
           </p>
-          <div className="flex flex-wrap items-center gap-3 pt-2">
+          <div className="flex flex-wrap items-center gap-4 pt-1">
             <Link href="/studio" className={cn(ctaClass)}>
-              Start an edit →
+              Open the editor →
             </Link>
             <a
-              href="#how-it-works"
-              className="text-sm text-ink underline-offset-4 hover:underline"
+              href="#the-night"
+              className="text-sm text-white/70 underline-offset-4 transition hover:text-white hover:underline"
             >
-              See how it works
+              Sound familiar?
             </a>
           </div>
+          <p className="text-xs uppercase tracking-[0.16em] text-white/40">
+            {copy.tagline}
+          </p>
         </div>
 
-        <div
-          aria-hidden
-          className="rounded-sm border border-[var(--line)] bg-[var(--surface)] p-4 sm:p-5"
-        >
-          <p className="text-[10px] uppercase tracking-[0.18em] text-[var(--muted)]">
-            Contact sheet → sequence
-          </p>
-          <div className="mt-4 grid grid-cols-5 gap-1.5">
-            {Array.from({ length: 20 }, (_, i) => {
-              const selected = [2, 5, 8, 11, 14, 18].includes(i)
-              return (
-                <div
-                  key={i}
-                  className={
-                    selected
-                      ? "aspect-square bg-[var(--darkroom)] ring-2 ring-[var(--accent)]"
-                      : "aspect-square bg-[var(--line)]/80"
-                  }
-                  style={{
-                    opacity: selected ? 1 : 0.55 + ((i % 5) * 0.06),
-                  }}
-                />
-              )
-            })}
-          </div>
-          <div className="mt-5 flex items-center justify-center text-[var(--muted)]">
-            ↓
-          </div>
-          <div className="mt-4 grid grid-cols-6 gap-2">
-            {SAMPLE_ROLES.map((role, index) => (
-              <div key={role} className="space-y-1.5">
-                <div className="aspect-[3/4] bg-[var(--darkroom)]" />
-                <p className="text-[9px] uppercase tracking-[0.12em] text-[var(--muted)]">
-                  {String(index + 1).padStart(2, "0")}
-                </p>
-                <p className="text-[9px] uppercase tracking-[0.1em] text-ink">
-                  {role}
-                </p>
+        <div className="relative" aria-hidden>
+          <div className="rounded-sm border border-white/10 bg-[var(--darkroom-surface)] p-4 sm:p-5">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-[10px] uppercase tracking-[0.2em] text-[var(--darkroom-muted)]">
+                11:48 pm · after the trip
+              </p>
+              <p className="text-[10px] uppercase tracking-[0.16em] text-[var(--accent)]">
+                Still undecided
+              </p>
+            </div>
+
+            <div className="mt-4 grid grid-cols-4 gap-1.5 sm:grid-cols-5">
+              {Array.from({ length: 20 }, (_, i) => {
+                const hot = [1, 4, 7, 9, 12, 15].includes(i)
+                return (
+                  <div
+                    key={i}
+                    className={cn(
+                      "relative aspect-[4/5] overflow-hidden",
+                      hot ? "ring-1 ring-[var(--accent)]" : "opacity-55",
+                    )}
+                    style={{
+                      background: `linear-gradient(${140 + i * 7}deg, #2a2a28 0%, #121210 55%, #3a3832 ${70 + (i % 4) * 5}%)`,
+                    }}
+                  >
+                    {hot ? (
+                      <span className="absolute inset-x-0 bottom-0 bg-black/55 px-1 py-0.5 text-center text-[8px] uppercase tracking-[0.08em] text-[var(--accent)]">
+                        ?
+                      </span>
+                    ) : null}
+                  </div>
+                )
+              })}
+            </div>
+
+            <div className="mt-4 flex flex-wrap gap-2">
+              {CHAOS_LABELS.map((label) => (
+                <span
+                  key={label}
+                  className="rounded-sm border border-white/10 bg-black/30 px-2 py-1 text-[10px] text-white/65"
+                >
+                  {label}
+                </span>
+              ))}
+            </div>
+
+            <div className="mt-5 border-t border-white/10 pt-4">
+              <p className="text-[10px] uppercase tracking-[0.18em] text-[var(--darkroom-muted)]">
+                What EDIT. returns instead
+              </p>
+              <div className="mt-3 flex gap-2 overflow-hidden">
+                {["Lead", "Scale", "Human", "Detail", "Breath", "Close"].map(
+                  (role, index) => (
+                    <div key={role} className="min-w-0 flex-1 space-y-1.5">
+                      <div
+                        className="aspect-[3/4] bg-[#1c1c1a] ring-1 ring-[var(--accent)]/40"
+                        style={{
+                          backgroundImage: `linear-gradient(${160 + index * 12}deg, #333 0%, #111 100%)`,
+                        }}
+                      />
+                      <p className="truncate text-[9px] uppercase tracking-[0.12em] text-white/55">
+                        {String(index + 1).padStart(2, "0")} · {role}
+                      </p>
+                    </div>
+                  ),
+                )}
               </div>
-            ))}
+            </div>
           </div>
         </div>
       </div>
