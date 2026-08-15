@@ -263,26 +263,41 @@ export function StudioShell() {
       dispatch({ type: "SET_PHASE", phase: "analyzing" })
 
       const preferences = getRecentPreferenceEvents(3)
-      const response = await fetch("/api/edit", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...demoAccessHeaders(),
-        },
-        body: JSON.stringify({
-          sessionId,
-          mode: state.mode,
-          targetCount: state.targetCount,
-          photos: uploaded.map((photo) => ({
-            id: photo.id,
-            pathname: photo.uploadedPathname!,
-            width: photo.width,
-            height: photo.height,
-          })),
-          preferences: preferences.length > 0 ? preferences : undefined,
-          strategy: "adaptive",
-        }),
-      })
+      const controller = new AbortController()
+      const timeoutMs = 190_000
+      const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs)
+
+      let response: Response
+      try {
+        response = await fetch("/api/edit", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...demoAccessHeaders(),
+          },
+          signal: controller.signal,
+          body: JSON.stringify({
+            sessionId,
+            mode: state.mode,
+            targetCount: state.targetCount,
+            photos: uploaded.map((photo) => ({
+              id: photo.id,
+              pathname: photo.uploadedPathname!,
+              width: photo.width,
+              height: photo.height,
+            })),
+            preferences: preferences.length > 0 ? preferences : undefined,
+            strategy: "adaptive",
+          }),
+        })
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") {
+          throw new Error(copy.editTimeout)
+        }
+        throw error
+      } finally {
+        window.clearTimeout(timeoutId)
+      }
 
       const payload: unknown = await response.json().catch(() => null)
 

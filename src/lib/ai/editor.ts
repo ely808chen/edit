@@ -149,7 +149,7 @@ function buildInitialInput(
     })
     contents.push({
       type: "input_image",
-      image: photo.dataUrl,
+      image: photo.overviewDataUrl ?? photo.dataUrl,
       detail,
     })
   }
@@ -210,7 +210,8 @@ async function runOnce(params: {
     outputType: EditResultSchema,
     tools,
     modelSettings: {
-      reasoning: { effort: "medium" },
+      // Keep low for multi-image latency; medium made large sets feel "stuck".
+      reasoning: { effort: "low" },
     },
   })
 
@@ -222,9 +223,26 @@ async function runOnce(params: {
     input.push(user(correctionMessage))
   }
 
-  const result = await run(agent, input, { context: ctx, maxTurns: 12 })
-  const output = result.finalOutput as EditResult | undefined
-  return { output, usage: extractUsage(result) }
+  const EDITOR_TIMEOUT_MS = 170_000
+  let timeoutId: ReturnType<typeof setTimeout> | undefined
+  try {
+    const result = await Promise.race([
+      run(agent, input, { context: ctx, maxTurns: 8 }),
+      new Promise<never>((_, reject) => {
+        timeoutId = setTimeout(() => {
+          reject(
+            new Error(
+              "The editor timed out while analyzing this set. Try fewer photos or a smaller final count, then run again.",
+            ),
+          )
+        }, EDITOR_TIMEOUT_MS)
+      }),
+    ])
+    const output = result.finalOutput as EditResult | undefined
+    return { output, usage: extractUsage(result) }
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId)
+  }
 }
 
 export async function runEditor(
