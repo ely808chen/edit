@@ -72,6 +72,8 @@ export type StudioState = {
 export type EditorPhoto = {
   id: string
   dataUrl: string
+  overviewDataUrl?: string
+  detailDataUrl?: string
   width: number
   height: number
   filename?: string

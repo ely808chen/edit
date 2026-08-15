@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { assertDemoAccess } from "@/lib/access/demo-access"
 import { runEditor } from "@/lib/ai/editor"
 import { EditRequestSchema } from "@/lib/ai/schemas"
+import { resizeDataUrlForModel } from "@/lib/images/server-image"
 import {
   deleteSessionBlobs,
   fetchPrivateBlobAsDataUrl,
@@ -10,6 +11,9 @@ import type { EditorPhoto } from "@/types"
 
 export const runtime = "nodejs"
 export const maxDuration = 300
+
+const OVERVIEW_LONG_EDGE = 768
+const DETAIL_LONG_EDGE = 1280
 
 export async function POST(request: Request): Promise<NextResponse> {
   const access = assertDemoAccess(request.headers)
@@ -31,6 +35,7 @@ export async function POST(request: Request): Promise<NextResponse> {
   }
 
   let sessionId: string | null = null
+  const started = Date.now()
 
   try {
     const json: unknown = await request.json()
@@ -47,17 +52,39 @@ export async function POST(request: Request): Promise<NextResponse> {
 
     const body = parsed.data
     sessionId = body.sessionId
+    console.info("[edit] start", {
+      sessionId,
+      photos: body.photos.length,
+      targetCount: body.targetCount,
+      mode: body.mode,
+    })
 
     const photos: EditorPhoto[] = []
     for (const photo of body.photos) {
+      const loadStarted = Date.now()
       const { dataUrl } = await fetchPrivateBlobAsDataUrl(photo.pathname)
+      const [overview, detail] = await Promise.all([
+        resizeDataUrlForModel(dataUrl, OVERVIEW_LONG_EDGE, 70),
+        resizeDataUrlForModel(dataUrl, DETAIL_LONG_EDGE, 78),
+      ])
       photos.push({
         id: photo.id,
-        dataUrl,
-        width: photo.width,
-        height: photo.height,
+        dataUrl: overview.dataUrl,
+        overviewDataUrl: overview.dataUrl,
+        detailDataUrl: detail.dataUrl,
+        width: overview.width,
+        height: overview.height,
+      })
+      console.info("[edit] photo ready", {
+        id: photo.id,
+        ms: Date.now() - loadStarted,
       })
     }
+
+    console.info("[edit] running editor", {
+      photos: photos.length,
+      prepMs: Date.now() - started,
+    })
 
     const editorResult = await runEditor({
       photos,
@@ -65,6 +92,12 @@ export async function POST(request: Request): Promise<NextResponse> {
       targetCount: body.targetCount,
       strategy: body.strategy ?? "adaptive",
       preferenceEvents: body.preferences,
+    })
+
+    console.info("[edit] finished", {
+      ok: editorResult.ok,
+      totalMs: Date.now() - started,
+      inspected: editorResult.debug.uniquePhotosInspected,
     })
 
     if (!editorResult.ok) {
@@ -82,6 +115,10 @@ export async function POST(request: Request): Promise<NextResponse> {
       debug: editorResult.debug,
     })
   } catch (error) {
+    console.error("[edit] failed", {
+      ms: Date.now() - started,
+      message: error instanceof Error ? error.message : "unknown",
+    })
     return NextResponse.json(
       {
         error:

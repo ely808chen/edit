@@ -22,6 +22,8 @@ export const copy = {
     "One working copy couldn’t be uploaded. Remove it or try again",
   aiFail:
     "The editor couldn’t finish this set. Your originals are still safe on your device",
+  editTimeout:
+    "This edit took too long and was stopped. Try fewer photos or a smaller final count, then run again",
   invalidResult:
     "The editor returned an incomplete sequence. Try this edit again",
   demoLocked: "This demo is access-controlled",

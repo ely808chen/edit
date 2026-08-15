@@ -95,7 +95,7 @@ export function createInspectPhotosTool(ctx: EditorContext) {
         })
         outputs.push({
           type: "image",
-          image: photo.dataUrl,
+          image: photo.detailDataUrl ?? photo.dataUrl,
           detail: "high",
         })
       }
