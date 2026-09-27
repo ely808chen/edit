@@ -149,6 +149,8 @@ export const ja: Dict = {
     failed: 'シェアに失敗しました。少し待ってから試してください。',
     close: '閉じる',
     caption: 'リンクを開くと、Jevにたずね直すことなく、この瞬間がそのまま再生されます。',
+    clip: '10秒のクリップを録画',
+    recording: '録画中',
   },
   replay: {
     loading: 'リプレイを読み込み中',

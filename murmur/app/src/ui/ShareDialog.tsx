@@ -9,7 +9,7 @@ export function ShareDialog() {
   const open = useUI((s) => s.shareOpen);
   const pulse = useUI((s) => s.pulse);
   const [link, setLink] = useState<string | null>(null);
-  const [state, setState] = useState<'idle' | 'copying' | 'copied' | 'saving' | 'failed'>('idle');
+  const [state, setState] = useState<'idle' | 'copying' | 'copied' | 'saving' | 'recording' | 'failed'>('idle');
   if (!open) return null;
   const close = () => {
     useUI.setState({ shareOpen: false });
@@ -57,6 +57,24 @@ export function ShareDialog() {
           {state === 'saving' ? t.share.saving : t.share.image}
         </button>
       </div>
+      {game.canRecordClip() && (
+        <button
+          className="ghost clip-btn"
+          disabled={state === 'recording'}
+          onClick={async () => {
+            setState('recording');
+            useUI.setState({ shareOpen: false });
+            try {
+              await game.recordClip(10);
+              setState('idle');
+            } catch {
+              setState('failed');
+            }
+          }}
+        >
+          {state === 'recording' ? t.share.recording : t.share.clip}
+        </button>
+      )}
       {link && (
         <input className="share-link" readOnly value={link} onFocus={(e) => e.currentTarget.select()} aria-label={t.share.copy} />
       )}

@@ -112,7 +112,7 @@ export function buildHeadline(input: HeadlineInput): Headline | null {
     aware: input.aware.toLocaleString(input.lang === 'ja' ? 'ja-JP' : 'en-US'),
     secs: Math.max(1, Math.round(input.seconds)),
   };
-  let line = fill(tpl, vars, input.eventText, input.lang);
+  let line = fill(tpl, vars, input.eventText, input.lang).replace(/…\./g, '…');
   if (input.lang === 'en') line = line.charAt(0).toUpperCase() + line.slice(1);
 
   // Second line: the rarest decision that still happened, from an archetype we can name.

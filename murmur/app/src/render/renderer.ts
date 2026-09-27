@@ -247,7 +247,7 @@ export class TownRenderer {
     this.renderCitizens(world, alpha, now, dt, view, opts, tickF);
     this.renderThreads(world, alpha, tickF);
     this.renderPins(world, now, opts);
-    this.renderEmotes(world, alpha, now);
+    this.renderEmotes(world, alpha, now, opts.reducedMotion);
     this.renderParticles(dt);
     this.renderFountain(dt, opts.reducedMotion);
     this.renderLighting(world, now);
@@ -543,7 +543,7 @@ export class TownRenderer {
     this.emotes.push({ sprite: s, citizen, born: now, life: id === 'ellipsis' ? 1100 : 1900, gentle });
   }
 
-  private renderEmotes(world: World, alpha: number, now: number) {
+  private renderEmotes(world: World, alpha: number, now: number, reduced: boolean) {
     const cam = this.camera;
     for (let i = 0; i < world.citizens.length; i++) {
       const c = world.citizens[i];
@@ -554,7 +554,7 @@ export class TownRenderer {
       const sy = (this.iy(c, alpha) * TILE - cam.y) * cam.zoom + cam.viewH / 2;
       if (sx < -40 || sy < -40 || sx > cam.viewW + 40 || sy > cam.viewH + 40) continue;
       const rain = (world.weather === 'light_rain' || world.weather === 'downpour') && c.emote === 'house';
-      this.spawnEmote(i, rain ? 'umbrella' : c.emote, now);
+      this.spawnEmote(i, rain ? 'umbrella' : c.emote, now, reduced);
       if (c.last && c.last.tick === world.tick) this.onPop?.(c.last.action);
     }
     const keep: EmoteSprite[] = [];

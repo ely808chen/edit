@@ -77,6 +77,7 @@ export interface UIState {
   onboarding: { phase: 'welcome' | 'typing' | 'caption' } | null;
   debug: DebugInfo | null;
   bestStars: Partial<Record<ChallengeId, number>>;
+  recording: boolean;
 }
 
 const DEFAULT_SETTINGS: Settings = {
@@ -123,6 +124,7 @@ export const useUI = create<UIState>(() => ({
   onboarding: null,
   debug: null,
   bestStars: {},
+  recording: false,
 }));
 
 export function setSettings(patch: Partial<Settings>) {

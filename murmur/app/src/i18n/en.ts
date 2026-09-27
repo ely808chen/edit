@@ -147,6 +147,8 @@ export const en = {
     failed: 'Sharing failed. Try again in a moment.',
     close: 'Close',
     caption: 'Anyone with the link sees this exact moment replayed, without asking Jev again.',
+    clip: 'Record a 10-second clip',
+    recording: 'Recording',
   },
   replay: {
     loading: 'Loading the replay',

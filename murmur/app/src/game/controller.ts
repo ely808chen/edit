@@ -774,6 +774,37 @@ export class Game {
     setTimeout(() => URL.revokeObjectURL(url), 2000);
   }
 
+  canRecordClip(): boolean {
+    return typeof MediaRecorder !== 'undefined' && typeof (this.renderer.app.canvas as HTMLCanvasElement).captureStream === 'function';
+  }
+
+  /** Records the next few seconds of the canvas as a video file. */
+  async recordClip(seconds = 10): Promise<void> {
+    const canvas = this.renderer.app.canvas as HTMLCanvasElement;
+    const stream = canvas.captureStream(30);
+    const type = ['video/mp4;codecs=avc1', 'video/webm;codecs=vp9', 'video/webm'].find((t) => MediaRecorder.isTypeSupported(t)) ?? '';
+    const rec = new MediaRecorder(stream, type ? { mimeType: type, videoBitsPerSecond: 6_000_000 } : undefined);
+    const chunks: Blob[] = [];
+    rec.ondataavailable = (e) => e.data.size && chunks.push(e.data);
+    const done = new Promise<void>((resolve) => (rec.onstop = () => resolve()));
+    rec.start(500);
+    useUI.setState({ recording: true });
+    await new Promise((r) => setTimeout(r, seconds * 1000));
+    rec.stop();
+    await done;
+    useUI.setState({ recording: false });
+    stream.getTracks().forEach((t) => t.stop());
+    const blob = new Blob(chunks, { type: rec.mimeType || 'video/webm' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `murmur-${Date.now().toString(36)}.${blob.type.includes('mp4') ? 'mp4' : 'webm'}`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+  }
+
   // ---------------------------------------------------------------------------
   // Settings
   // ---------------------------------------------------------------------------

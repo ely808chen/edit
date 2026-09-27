@@ -1247,6 +1247,10 @@ button:disabled {
   flex: 1 1 140px;
 }
 
+.clip-btn {
+  margin-top: 10px;
+}
+
 .share-link {
   margin-top: 12px;
   width: 100%;
@@ -1279,6 +1283,30 @@ button:disabled {
 .challenge-hud ~ .banner,
 .pulse.with-hud ~ .banner {
   top: auto;
+}
+
+.rec-pill {
+  position: absolute;
+  top: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 60;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--panel-strong);
+  font-weight: 700;
+  font-size: var(--t13);
+}
+
+.rec-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--blush);
+  animation: breathe 1s ease-in-out infinite;
 }
 
 .mock-label {
@@ -1550,7 +1578,31 @@ button:disabled {
     }
   }
 
-  .mock-label {
+  .rec-pill {
+  position: absolute;
+  top: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 60;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--panel-strong);
+  font-weight: 700;
+  font-size: var(--t13);
+}
+
+.rec-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--blush);
+  animation: breathe 1s ease-in-out infinite;
+}
+
+.mock-label {
     left: auto;
     right: 10px;
     bottom: auto;
@@ -1558,7 +1610,31 @@ button:disabled {
     padding: 4px 8px;
   }
 
-  .pulse ~ .mock-label {
+  .pulse ~ .rec-pill {
+  position: absolute;
+  top: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 60;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--panel-strong);
+  font-weight: 700;
+  font-size: var(--t13);
+}
+
+.rec-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--blush);
+  animation: breathe 1s ease-in-out infinite;
+}
+
+.mock-label {
     top: auto;
     bottom: calc(118px + var(--safe-b) + var(--kb));
   }

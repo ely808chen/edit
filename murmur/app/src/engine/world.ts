@@ -169,6 +169,14 @@ export interface WaveRequest {
   citizenIds: number[];
 }
 
+const RAMEN_QUEUE: Array<{ x: number; y: number }> = (() => {
+  const out: Array<{ x: number; y: number }> = [];
+  for (let k = 0; k < 6; k++) out.push({ x: 40.5, y: 8.5 + k * 0.52 });
+  for (let k = 0; k < 30; k++) out.push({ x: 39.9 - k * 0.52, y: 11.35 });
+  for (let k = 0; k < 30; k++) out.push({ x: 39.6 - k * 0.52, y: 11.85 });
+  return out;
+})();
+
 function weightedArchetype(u: number): Archetype {
   let total = 0;
   for (const a of ARCHETYPES) total += a.weight;
@@ -1021,7 +1029,15 @@ export class World {
     } else {
       const p = this.map.places[res.place];
       const linger = res.out || !p.interior || hrand(this.seed, c.id, 89) < 0.15;
-      if (linger && p.areaTiles.length) {
+      if (res.place === 'ramen') {
+        // A queue snakes from the counter down toward the shopping street.
+        const k = Math.floor(hrand(this.seed, c.id, Math.floor(this.minute / 30), 91) * RAMEN_QUEUE.length);
+        const q = RAMEN_QUEUE[k];
+        c.tx = q.x;
+        c.ty = q.y;
+        c.tTile = idx(Math.floor(q.x), Math.floor(q.y));
+        c.enter = false;
+      } else if (linger && p.areaTiles.length) {
         const t = this.idleTile(p, hrand(this.seed, c.id, this.tick, 97));
         c.tx = t.x + 0.2 + 0.6 * hrand(this.seed, c.id, 101);
         c.ty = t.y + 0.2 + 0.6 * hrand(this.seed, c.id, 103);
@@ -1047,6 +1063,10 @@ export class World {
 
   private pickIdleSpot(c: Citizen) {
     const place = c.routinePlace === 'home' ? null : this.map.places[c.routinePlace];
+    if (place?.id === 'ramen') {
+      c.idleUntil = this.tick + 60;
+      return;
+    }
     c.idleUntil = this.tick + 40 + Math.floor(hrand(this.seed, c.id, this.tick, 107) * 90);
     if (!place || place.areaTiles.length === 0) return;
     if (place.id === 'park' && hrand(this.seed, c.id, this.tick, 109) < 0.2) {
