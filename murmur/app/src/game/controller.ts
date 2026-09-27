@@ -65,6 +65,14 @@ export class Game {
     this.bindInput(parent);
     useUI.setState({ bestStars: loadBestStars() });
     this.loadedAt = performance.now();
+    void api.status().then((st) => {
+      if (!st) {
+        useUI.setState({ fallback: true });
+        return;
+      }
+      this.provider = st.provider;
+      useUI.setState({ mockSeen: st.mock, fallback: st.fallback });
+    });
     const path = location.pathname;
     const m = /^\/r\/([a-z0-9]{4,12})$/i.exec(path);
     if (m) {

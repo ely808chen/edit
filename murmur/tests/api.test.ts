@@ -4,6 +4,7 @@ import { onRequestPost as preview } from '../functions/api/preview';
 import { onRequestPost as decide } from '../functions/api/decide';
 import { onRequestPost as share } from '../functions/api/share';
 import { onRequestGet as replay } from '../functions/api/replay/[id]';
+import { onRequestGet as status } from '../functions/api/status';
 import { memoryKv } from '../functions/_lib/memoryKv';
 import type { Env } from '../functions/_lib/env';
 import { isBlockedText } from '../functions/_lib/moderation';
@@ -59,6 +60,15 @@ describe('analyze and preview', () => {
     const res = await analyze(ctx({ text: 'free ramen' }, { PROVIDER: 'typesafe', JEV_API_KEY: 'x', KILL_SWITCH: 'true' }, '8.8.8.8'));
     expect(res.headers.get('x-murmur-fallback')).toBe('1');
     expect((await res.json()).mock).toBe(true);
+  });
+});
+
+describe('status', () => {
+  it('reports mock mode without revealing secrets', async () => {
+    const j = await (await status(ctx(undefined, { PROVIDER: 'typesafe', JEV_API_KEY: 'secret-key' }))).json();
+    expect(j).toEqual({ provider: 'typesafe', mock: false, fallback: false });
+    const m = await (await status(ctx(undefined))).json();
+    expect(m.mock).toBe(true);
   });
 });
 

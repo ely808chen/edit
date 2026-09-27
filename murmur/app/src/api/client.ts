@@ -164,3 +164,13 @@ export async function fetchReplay(id: string): Promise<unknown> {
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }
+
+export async function status(): Promise<{ provider: string; mock: boolean; fallback: boolean } | null> {
+  try {
+    const res = await fetch('/api/status');
+    if (!res.ok) return null;
+    return (await res.json()) as { provider: string; mock: boolean; fallback: boolean };
+  } catch {
+    return null;
+  }
+}

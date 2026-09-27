@@ -60,5 +60,6 @@ Judgment calls made while building Murmur, one line of reasoning each.
 - Tapping the map on a place sets the ghost pin; tapping it again or tapping elsewhere clears it. Tapping a citizen always wins over tapping a place.
 - On a portrait phone the director camera never pulls back further than the default framing, since the landscape town would shrink to a thin strip.
 - The FPS fallback to 600 citizens only happens in free play with no active events, and starts a fresh town, because swapping citizens mid-ripple would break the replay log.
+- A small `GET /api/status` tells the client at load whether the server is in mock mode, so the "Simulated locally" label is there from the first frame rather than after the first answer.
 - Mock results shown in the card say "Simulated locally"; the yellow fallback banner is reserved for the budget, kill switch, or an unreachable server, matching the spec's copy.
 - Clip recording (stretch goal) uses `canvas.captureStream` and MediaRecorder, preferring MP4 where the browser supports it, and only appears when both APIs exist.

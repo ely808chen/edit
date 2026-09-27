@@ -40,6 +40,7 @@ Browser                                         Cloudflare Pages Functions
 │ render/  PixiJS diorama, emotes,       │ ────▶ │ /api/decide    NDJSON, one line per     │
 │          threads, weather, lighting    │       │                context as batches land  │
 │ ui/      React overlay                 │ ◀──── │ /api/share, /api/replay/:id  (KV)       │
+│                                        │       │ /api/status    provider, mock or not    │
 │ api/     NDJSON stream reader          │ NDJSON│ _lib/ questions, providers, moderation, │
 └───────────────────────────────────────┘       │       rate limits, budget, cache        │
                                                 └────────────────────────────────────────┘
@@ -64,7 +65,7 @@ murmur/
   app/src/audio     Web Audio synth (no audio files)
   app/src/i18n      en.ts, ja.ts
   app/src/game      controller, store, challenges
-  functions/api     preview.ts, analyze.ts, decide.ts, share.ts, replay/[id].ts
+  functions/api     preview.ts, analyze.ts, decide.ts, share.ts, replay/[id].ts, status.ts
   functions/_lib    providers (mock, TypeSafe, OpenRouter, Vercel), moderation, limits, budget, cache
   shared            actions, archetypes, places, templates (server only), headlines, mock brain, types
   eval              feel-tests.ts

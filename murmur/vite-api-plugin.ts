@@ -10,6 +10,7 @@ const ROUTES: Array<{ method: string; pattern: RegExp; file: string; fn: string;
   { method: 'POST', pattern: /^\/api\/analyze$/, file: 'functions/api/analyze.ts', fn: 'onRequestPost' },
   { method: 'POST', pattern: /^\/api\/decide$/, file: 'functions/api/decide.ts', fn: 'onRequestPost' },
   { method: 'POST', pattern: /^\/api\/share$/, file: 'functions/api/share.ts', fn: 'onRequestPost' },
+  { method: 'GET', pattern: /^\/api\/status$/, file: 'functions/api/status.ts', fn: 'onRequestGet' },
   { method: 'GET', pattern: /^\/api\/replay\/([^/]+)$/, file: 'functions/api/replay/[id].ts', fn: 'onRequestGet', param: 'id' },
 ];
 
