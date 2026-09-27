@@ -74,7 +74,7 @@ export interface UIState {
   shareOpen: boolean;
   challenge: ChallengeUI | null;
   replay: { state: 'loading' | 'playing' | 'ended' | 'missing'; headline: { line: string; subline: string | null } | null } | null;
-  onboarding: { caption: boolean } | null;
+  onboarding: { phase: 'welcome' | 'typing' | 'caption' } | null;
   debug: DebugInfo | null;
   bestStars: Partial<Record<ChallengeId, number>>;
 }

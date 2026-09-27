@@ -819,7 +819,7 @@ export class Game {
       this.mode = 'free';
       this.newWorld({ seed: this.freshSeed(), citizenCount: useUI.getState().settings.citizenCount, startMinute: DEFAULT_START });
     }
-    useUI.setState({ onboarding: { caption: false }, settingsOpen: false, challenge: null });
+    useUI.setState({ onboarding: { phase: 'welcome' }, settingsOpen: false, challenge: null });
     const cam = this.renderer.camera;
     const now = performance.now();
     const reduced = useUI.getState().settings.reducedMotion;
@@ -833,6 +833,7 @@ export class Game {
     const text = useUI.getState().lang === 'ja' ? '公園で無料ラーメン' : 'free ramen in the park';
     const at = (ms: number, fn: () => void) => this.onboardingTimers.push(window.setTimeout(fn, ms));
     let t = reduced ? 600 : 3400;
+    at(t - 200, () => useUI.setState({ onboarding: { phase: 'typing' } }));
     for (let i = 1; i <= text.length; i++) {
       const ch = text[i - 1];
       t += ch === ' ' ? 320 : useUI.getState().lang === 'ja' ? 260 : 95;
@@ -840,7 +841,7 @@ export class Game {
       at(t, () => this.setCommandText(partial));
     }
     at(t + 1300, () => void this.release(text));
-    at(t + 8500, () => useUI.setState({ onboarding: { caption: true } }));
+    at(t + 8500, () => useUI.setState({ onboarding: { phase: 'caption' } }));
     at(t + 15000, () => this.stopOnboarding(true));
   }
 

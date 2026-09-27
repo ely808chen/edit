@@ -307,11 +307,11 @@ function windowRect(p: Painter, x: number, y: number, w: number, h: number, lit:
   if (lit) {
     const l = p.lights;
     const g = l.createRadialGradient(x + w / 2, y + h / 2, 0, x + w / 2, y + h / 2, Math.max(w, h) * 1.6);
-    g.addColorStop(0, 'rgba(255,211,110,0.55)');
-    g.addColorStop(1, 'rgba(255,211,110,0)');
+    g.addColorStop(0, 'rgba(255,200,100,0.22)');
+    g.addColorStop(1, 'rgba(255,200,100,0)');
     l.fillStyle = g;
     l.fillRect(x - w, y - h, w * 3, h * 3);
-    l.fillStyle = '#FFD36E';
+    l.fillStyle = 'rgba(255,205,105,0.78)';
     rr(l, x, y, w, h, 1);
     l.fill();
   }

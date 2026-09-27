@@ -146,7 +146,7 @@ export class TownRenderer {
     this.worldLayer.addChild(this.town, this.shimmerA, this.shimmerB, this.snowRoofs, this.groundFx, this.citizenLayer, this.extrasLayer, this.particleLayer);
 
     this.nightOverlay = this.overlay(PAL.night, 'multiply');
-    this.goldOverlay = this.overlay('#FFC98A', 'multiply');
+    this.goldOverlay = this.overlay('#FFD9A6', 'multiply');
     this.weatherOverlay = this.overlay('#8F9BB8', 'multiply');
     this.flashOverlay = this.overlay('#FFF4D6', 'add');
 
@@ -677,9 +677,9 @@ export class TownRenderer {
     const starry = world.weather === 'starry';
     const night = Math.max(L.night, starry ? 0.45 : 0);
     this.nightOverlay.alpha = 0.55 * night;
-    this.goldOverlay.tint = L.dawn > L.golden ? 0xffc4c9 : 0xffc98a;
+    this.goldOverlay.tint = L.dawn > L.golden ? 0xffd0d6 : 0xffd9a6;
     this.goldOverlay.alpha = 0.32 * Math.max(L.golden, L.dawn);
-    this.lights.alpha = Math.min(1, night * 1.1) * (0.94 + 0.06 * Math.sin(now / 700));
+    this.lights.alpha = Math.min(0.85, night * 0.95) * (0.95 + 0.05 * Math.sin(now / 700));
   }
 
   private renderWeather(world: World, now: number, dt: number, opts: RenderOptions) {
@@ -769,21 +769,21 @@ export class TownRenderer {
     this.flashOverlay.alpha *= 0.9;
     if (fw && now > this.nextFirework && f > 0.2) {
       this.nextFirework = now + 700 + Math.random() * 700;
-      const bx = fw.ox * TILE + (Math.random() - 0.5) * 200;
-      const by = fw.oy * TILE - 90 - Math.random() * 80;
+      const bx = fw.ox * TILE + (Math.random() - 0.5) * 320;
+      const by = fw.oy * TILE - 110 - Math.random() * 120;
       const colors = [PAL.lantern, PAL.blush, PAL.lagoon, '#FFFFFF', '#BFA6F4', '#A6E3C8'];
       const col = hex(colors[Math.floor(Math.random() * colors.length)]);
-      const n = opts.reducedMotion ? 14 : 34;
+      const n = opts.reducedMotion ? 18 : 46;
       for (let k = 0; k < n; k++) {
         const a = (k / n) * Math.PI * 2;
-        const sp = 0.05 + Math.random() * 0.03;
+        const sp = 0.07 + Math.random() * 0.05;
         const s = this.getParticle(this.sheet.dot, this.weatherWorld);
         s.tint = col;
-        s.scale.set(S * 0.9);
+        s.scale.set(S * (1.5 + Math.random()));
         s.blendMode = 'add';
-        this.particlesWorld.push({ sprite: s, x: bx, y: by, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: 0, max: 1300, gravity: 0.00005, spin: 0 });
+        this.particlesWorld.push({ sprite: s, x: bx, y: by, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: 0, max: 1600, gravity: 0.00004, spin: 0 });
       }
-      if (!opts.reducedMotion) this.flashOverlay.alpha = 0.08;
+      if (!opts.reducedMotion) this.flashOverlay.alpha = 0.1;
     }
     const keep: Particle[] = [];
     for (const p of this.particlesWorld) {

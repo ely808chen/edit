@@ -124,6 +124,21 @@ const DIMINISHERS = [
   '小さな', 'ちょっと', '少し', '普通', 'いつも通り', '静か',
 ];
 const MUNDANE = ['boring', 'ordinary', 'nothing', 'usual', 'normal', 'mundane', 'regular', 'same as', 'as always', '普通', 'いつも通り', '平凡', '何もない'];
+const BORING = [
+  'council', 'committee', 'paperwork', 'recycling', 'schedule', 'tax form', 'survey', 'policy', 'minutes', 'budget', 'bylaw',
+  'meeting', 'form', 'regulation', 'parking permit', 'office hours', 'maintenance', 'inspection', 'spreadsheet',
+  '会議', '書類', '回覧板', '予定表', '規則', '点検', '委員会', '手続き',
+];
+const GOSSIP = [
+  'secret', "don't tell", 'dont tell', 'gossip', 'scandal', 'dating', 'in love', 'crush', 'confess', 'eloped', 'affair', 'engaged', 'between us',
+  '秘密', '内緒', 'ここだけの話', '付き合って', '告白', '熱愛', 'スキャンダル',
+];
+const EVACUATE = ['evacuate', 'evacuation', 'leave the', 'get out', 'tsunami', 'warning', 'alert', 'closed for safety', '避難', '警報', '津波', '立ち入り禁止'];
+const CALM = [
+  'all clear', 'false alarm', 'harmless', 'friendly', 'mascot', 'costume', 'just a', 'only a', 'nothing to worry', 'no danger', 'safe now',
+  'is safe', 'relax', 'calm down', 'fake', 'not real', 'gentle', 'cute',
+  '安全', '大丈夫', '誤報', '心配ない', '着ぐるみ', 'やさしい', '無害',
+];
 const BROADCAST_WORDS = ['announce', 'siren', 'everyone', 'whole town', 'all residents', 'broadcast', 'loudspeaker', 'official', 'mayor', '放送', '全員', '町中', '発表', 'サイレン', '市長', '町長'];
 
 const WEATHER_WORDS: Array<[Weather, string[]]> = [
@@ -157,6 +172,10 @@ export function mockCategory(text: string): Category {
   const t = normalizeEventText(text);
   const scores: Partial<Record<Category, number>> = {};
   for (const c of PRIORITY) scores[c] = hits(t, CATEGORY_WORDS[c as Exclude<Category, 'other'>]);
+  // Reassurance cancels the scary reading ("the giant crab is just a mascot").
+  if (hits(t, CALM) > 0) scores.danger = 0;
+  // Secrets about people are gossip, whoever they involve.
+  if (hits(t, GOSSIP) > 0 && (scores.danger ?? 0) === 0) return 'rumor';
   // An animal doing something official is absurd, not bureaucratic.
   if ((scores.animal ?? 0) > 0 && ((scores.announcement ?? 0) > 0 || (scores.spectacle ?? 0) > 0)) return 'silly';
   let best: Category = 'silly';
@@ -168,7 +187,10 @@ export function mockCategory(text: string): Category {
       bestScore = s;
     }
   }
-  if (bestScore === 0) return hits(t, MUNDANE) > 0 ? 'other' : 'silly';
+  if (bestScore === 0) {
+    if (hits(t, BORING) > 0) return 'announcement';
+    return hits(t, MUNDANE) > 0 ? 'other' : 'silly';
+  }
   return best;
 }
 
@@ -196,6 +218,7 @@ export function mockSeverity(text: string, category: Category): Severity {
   const t = normalizeEventText(text);
   let s = BASE_SEVERITY[category];
   if (hits(t, INTENSIFIERS) > 0) s += 1;
+  if (hits(t, BORING) > 0) s = Math.max(s, 1);
   if (hits(t, DIMINISHERS) > 0) s -= 1;
   const bangs = (text.match(/[!！]/g) ?? []).length;
   if (bangs >= 1) s += 1;
@@ -339,6 +362,10 @@ export function mockDistribution(input: MockDecisionInput): ActionProbs {
   }
   if (isNight(input.minute)) applyMult(w, { head_home: 1.4, ignore: 1.2 });
   if (hits(text, MUNDANE) > 0) applyMult(w, { ignore: 4 });
+  if (hits(text, BORING) > 0) applyMult(w, { ignore: 9, complain: 0.5, spread_word: 0.35, celebrate: 0.3, film_it: 0.3, rush_toward: 0.4, stroll_toward: 0.5 });
+  if (hits(text, CALM) > 0) applyMult(w, { panic: 0.08, flee: 0.08, complain: 0.3, head_home: 0.4, celebrate: 1.6, ignore: 1.4, stroll_toward: 1.3 });
+  if (hits(text, GOSSIP) > 0) applyMult(w, { spread_word: 3.2, ignore: 0.5 });
+  if (hits(text, EVACUATE) > 0) applyMult(w, { head_home: 3.5, flee: 2, ignore: 0.2, film_it: 0.4, celebrate: 0.2, spread_word: 0.6, complain: 0.5, rush_toward: 0.1, help_out: 0.1, investigate: 0.2, stroll_toward: 0.2 });
   for (const q of input.quirks) {
     if (q.category && q.category !== input.category) continue;
     if (q.match && !new RegExp(q.match, 'i').test(text)) continue;

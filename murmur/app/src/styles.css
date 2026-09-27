@@ -112,6 +112,7 @@ button:disabled {
 }
 
 .wordmark {
+  white-space: nowrap;
   font-family: var(--display);
   font-size: var(--t24);
   letter-spacing: 0.01em;
@@ -247,6 +248,10 @@ button:disabled {
 .speed-btn.on {
   background: var(--plum);
   color: #fff;
+}
+
+.lang-toggle {
+  display: none;
 }
 
 .seg {
@@ -1428,6 +1433,31 @@ button:disabled {
 
   .hide-narrow {
     display: none;
+  }
+
+  .lang-seg {
+    display: none;
+  }
+
+  .lang-toggle {
+    display: inline-flex;
+    width: 38px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .icon-btn,
+  .pill-btn,
+  .clock-pill {
+    height: 38px;
+  }
+
+  .icon-btn {
+    width: 38px;
+  }
+
+  .clock-pill {
+    padding: 0 3px 0 10px;
   }
 
   .pill-btn {

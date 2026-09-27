@@ -119,7 +119,8 @@ export class Camera {
   direct(now: number, wx: number, wy: number, radiusPx: number) {
     this.followId = null;
     const close = Math.min(this.maxZoom, Math.max(this.defaultZoom * 1.7, 1.6));
-    const reveal = Math.max(this.minZoom, Math.min(this.defaultZoom, Math.min(this.viewW, this.viewH) / (radiusPx * 2.6)));
+    let reveal = Math.max(this.minZoom, Math.min(this.defaultZoom, Math.min(this.viewW, this.viewH) / (radiusPx * 2.6)));
+    if (this.isPortrait) reveal = Math.max(reveal, this.defaultZoom * 0.92);
     this.shots = [
       { x: wx, y: wy, zoom: close, dur: 600 },
       { x: wx, y: wy, zoom: close, dur: 1200 },

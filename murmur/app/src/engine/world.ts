@@ -661,7 +661,8 @@ export class World {
       case 'toward_brisk':
       case 'toward_run': {
         ev.towardCount++;
-        const tiles = place.gatherTiles;
+        // Crowds stop at the edge of a danger zone, like onlookers at police tape.
+        const tiles = ev.analysis.category === 'danger' ? this.cordonTiles(ev) : place.gatherTiles;
         const span = Math.min(tiles.length, 6 + Math.floor(ev.towardCount / 3.2));
         const t = tiles[Math.floor(hrand(this.seed, c.id, ev.idx, 53) * span)];
         r.tx = t.x + 0.2 + 0.6 * hrand(this.seed, c.id, 59);
@@ -670,6 +671,15 @@ export class World {
         break;
       }
       case 'circle': {
+        if (ev.analysis.category === 'danger') {
+          const tiles = this.cordonTiles(ev);
+          const t = tiles[Math.floor(hrand(this.seed, c.id, ev.idx, 57) * Math.min(tiles.length, 40))];
+          r.tx = t.x + 0.5;
+          r.ty = t.y + 0.5;
+          r.tile = idx(t.x, t.y);
+          r.phase = 2;
+          break;
+        }
         const dx = c.x - ev.ox;
         const dy = c.y - ev.oy;
         const d = Math.sqrt(dx * dx + dy * dy) || 1;
@@ -693,11 +703,21 @@ export class World {
         r.tile = idx(c.home.door.x, c.home.door.y);
         break;
       case 'stay':
-      case 'jitter':
+      case 'jitter': {
         if (c.inside) this.exitBuilding(c);
         r.ax = c.x;
         r.ay = c.y;
+        const out = this.retreatTile(c);
+        if (out >= 0) {
+          r.tile = out;
+          r.tx = (out % MAP_W) + 0.5;
+          r.ty = Math.floor(out / MAP_W) + 0.5;
+          r.phase = 0;
+        } else {
+          r.phase = 1;
+        }
         break;
+      }
       case 'away':
         if (c.inside) this.exitBuilding(c);
         break;
@@ -710,6 +730,66 @@ export class World {
     c.reaction = meta.movement === 'routine' ? null : r;
     c.lookX = ev.ox;
     c.lookY = ev.oy;
+  }
+
+  private cordonCache = new Map<number, Array<{ x: number; y: number }>>();
+
+  /** Walkable tiles just outside a danger event's place, nearest to the event first. */
+  private cordonTiles(ev: SimEvent) {
+    let list = this.cordonCache.get(ev.idx);
+    if (!list) {
+      const place = this.map.places[ev.analysis.place];
+      list = place.gatherTiles.filter((t) => !this.nearMask(place.placeMask, t.x, t.y, 1));
+      if (list.length < 10) list = place.gatherTiles;
+      this.cordonCache.set(ev.idx, list);
+    }
+    return list;
+  }
+
+  private nearMask(mask: Uint8Array, x: number, y: number, r: number): boolean {
+    for (let dy = -r; dy <= r; dy++) {
+      for (let dx = -r; dx <= r; dx++) {
+        const nx = x + dx;
+        const ny = y + dy;
+        if (nx >= 0 && ny >= 0 && nx < MAP_W && ny < MAP_H && mask[idx(nx, ny)]) return true;
+      }
+    }
+    return false;
+  }
+
+  /** Where to step to if the citizen is standing inside the place of any active danger event. */
+  private retreatTile(c: Citizen): number {
+    for (const e of this.events) {
+      if (!e || !e.active || e.analysis.category !== 'danger') continue;
+      const t = this.tileOutside(c, this.map.places[e.analysis.place].placeMask, e);
+      if (t >= 0) return t;
+    }
+    return -1;
+  }
+
+  /** Nearest walkable tile outside a place and at least 4 tiles from the event, if the citizen is inside it. */
+  private tileOutside(c: Citizen, mask: Uint8Array, ev: SimEvent): number {
+    const cx = Math.floor(c.x);
+    const cy = Math.floor(c.y);
+    if (!mask[idx(cx, cy)]) return -1;
+    let best = -1;
+    let bestD = Infinity;
+    for (let dy = -12; dy <= 12; dy++) {
+      for (let dx = -12; dx <= 12; dx++) {
+        const x = cx + dx;
+        const y = cy + dy;
+        if (x < 0 || y < 0 || x >= MAP_W || y >= MAP_H) continue;
+        const i = idx(x, y);
+        if (!this.map.walkable[i] || this.nearMask(mask, x, y, 2)) continue;
+        if ((x + 0.5 - ev.ox) ** 2 + (y + 0.5 - ev.oy) ** 2 < 16) continue;
+        const d = dx * dx + dy * dy;
+        if (d < bestD) {
+          bestD = d;
+          best = i;
+        }
+      }
+    }
+    return best;
   }
 
   private walkableTileNear(x: number, y: number): number {
@@ -788,6 +868,11 @@ export class World {
       }
       case 'circle': {
         const sp = WALK * c.speed;
+        if (r.phase === 2) {
+          if (!c.arrived && this.moveToward(c, r.tx, r.ty, r.tile, sp)) c.arrived = true;
+          this.faceToward(c, ev.ox);
+          break;
+        }
         if (r.phase === 0) {
           if (this.moveToward(c, r.tx, r.ty, r.tile, sp)) r.phase = 1;
         } else {
@@ -807,15 +892,43 @@ export class World {
       }
       case 'home': {
         if (c.inside) break;
-        if (this.moveToward(c, r.tx, r.ty, r.tile, WALK * c.speed * 1.2)) c.inside = true;
+        const nearDoor = Math.abs(c.x - r.tx) < 0.75 && Math.abs(c.y - r.ty) < 0.75;
+        if (nearDoor || this.moveToward(c, r.tx, r.ty, r.tile, WALK * c.speed * 1.2)) {
+          c.inside = true;
+          c.x = r.tx;
+          c.y = r.ty;
+        }
         break;
       }
       case 'stay': {
+        if (r.phase === 0) {
+          if (this.moveToward(c, r.tx, r.ty, r.tile, WALK * c.speed * 1.5)) {
+            r.phase = 1;
+            r.ax = c.x;
+            r.ay = c.y;
+          }
+          c.running = true;
+          break;
+        }
         if (r.action === 'celebrate' || r.action === 'complain' || r.action === 'film_it') this.faceToward(c, ev.ox);
         break;
       }
       case 'away': {
-        if (age < 140) {
+        if (age >= 40) {
+          // After the first dash, fleeing citizens make for the safety of home.
+          if (c.inside) break;
+          const hx = c.home.door.x + 0.5;
+          const hy = c.home.door.y + 0.5;
+          const near = Math.abs(c.x - hx) < 0.75 && Math.abs(c.y - hy) < 0.75;
+          if (near || this.moveToward(c, hx, hy, idx(c.home.door.x, c.home.door.y), WALK * c.speed * 1.6)) {
+            c.inside = true;
+            c.x = hx;
+            c.y = hy;
+          }
+          c.running = true;
+          break;
+        }
+        {
           const f = this.eventField(ev);
           const cx = Math.floor(c.x);
           const cy = Math.floor(c.y);
@@ -832,6 +945,15 @@ export class World {
         break;
       }
       case 'jitter': {
+        if (r.phase === 0) {
+          if (this.moveToward(c, r.tx, r.ty, r.tile, WALK * c.speed * 1.8)) {
+            r.phase = 1;
+            r.ax = c.x;
+            r.ay = c.y;
+          }
+          c.running = true;
+          break;
+        }
         const sp = WALK * c.speed * 1.3;
         const slot = Math.floor(this.tick / 4);
         let ang = hrand(this.seed, c.id, slot, 79);
@@ -868,9 +990,14 @@ export class World {
     if ((this.tick + c.id) % 10 === 0 || c.routineKey === '') this.planRoutine(c, false);
     if (c.inside) return;
     if (!c.arrived) {
-      if (this.moveToward(c, c.tx, c.ty, c.tTile, WALK * c.speed)) {
+      const nearDoor = c.enter && Math.abs(c.x - c.tx) < 0.75 && Math.abs(c.y - c.ty) < 0.75;
+      if (nearDoor || this.moveToward(c, c.tx, c.ty, c.tTile, WALK * c.speed)) {
         c.arrived = true;
-        if (c.enter) c.inside = true;
+        if (c.enter) {
+          c.inside = true;
+          c.x = c.tx;
+          c.y = c.ty;
+        }
         c.idleUntil = this.tick + 30 + Math.floor(hrand(this.seed, c.id, this.tick, 83) * 70);
       }
       return;
@@ -895,8 +1022,7 @@ export class World {
       const p = this.map.places[res.place];
       const linger = res.out || !p.interior || hrand(this.seed, c.id, 89) < 0.15;
       if (linger && p.areaTiles.length) {
-        const span = Math.min(p.gatherTiles.length, Math.max(p.areaTiles.length, 44));
-        const t = p.gatherTiles[Math.floor(hrand(this.seed, c.id, this.tick, 97) * span)];
+        const t = this.idleTile(p, hrand(this.seed, c.id, this.tick, 97));
         c.tx = t.x + 0.2 + 0.6 * hrand(this.seed, c.id, 101);
         c.ty = t.y + 0.2 + 0.6 * hrand(this.seed, c.id, 103);
         c.tTile = idx(t.x, t.y);
@@ -913,6 +1039,12 @@ export class World {
     c.arrived = atTarget && c.enter && wasInside;
   }
 
+  /** Big places use their own tiles; small ones spill into the surroundings so crowds don't pile up. */
+  private idleTile(p: TownMap['places'][PlaceId], u: number) {
+    if (p.areaTiles.length >= 44) return p.areaTiles[Math.floor(u * p.areaTiles.length)];
+    return p.gatherTiles[Math.floor(u * Math.min(p.gatherTiles.length, 44))];
+  }
+
   private pickIdleSpot(c: Citizen) {
     const place = c.routinePlace === 'home' ? null : this.map.places[c.routinePlace];
     c.idleUntil = this.tick + 40 + Math.floor(hrand(this.seed, c.id, this.tick, 107) * 90);
@@ -926,9 +1058,8 @@ export class World {
       c.arrived = false;
       return;
     }
-    const span = Math.min(place.gatherTiles.length, Math.max(place.areaTiles.length, 44));
     for (let k = 0; k < 4; k++) {
-      const t = place.gatherTiles[Math.floor(hrand(this.seed, c.id, this.tick * 7 + k, 131) * span)];
+      const t = this.idleTile(place, hrand(this.seed, c.id, this.tick * 7 + k, 131));
       const dx = t.x + 0.5 - c.x;
       const dy = t.y + 0.5 - c.y;
       if (dx * dx + dy * dy < 16) {

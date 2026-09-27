@@ -32,7 +32,7 @@ export function TopBar() {
                 {speed === 0 ? <PlayIcon /> : <PauseIcon />}
               </button>
               <button
-                className={`speed-btn ${speed === 3 ? 'on' : ''}`}
+                className={`speed-btn hide-narrow ${speed === 3 ? 'on' : ''}`}
                 aria-pressed={speed === 3}
                 onClick={() => setSettings({ speed: speed === 3 ? 1 : 3 })}
               >
@@ -47,7 +47,10 @@ export function TopBar() {
             <span className="hide-narrow">{t.top.challenges}</span>
           </button>
         )}
-        <div className="seg" role="group" aria-label={t.settings.language}>
+        <button className="pill-btn lang-toggle" aria-label={t.top.languageLabel} onClick={() => setLang(lang === 'en' ? 'ja' : 'en')} lang={lang === 'en' ? 'ja' : 'en'}>
+          {lang === 'en' ? 'JA' : 'EN'}
+        </button>
+        <div className="seg lang-seg" role="group" aria-label={t.settings.language}>
           <button aria-pressed={lang === 'en'} className={lang === 'en' ? 'on' : ''} onClick={() => setLang('en')}>
             EN
           </button>

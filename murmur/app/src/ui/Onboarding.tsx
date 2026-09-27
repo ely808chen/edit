@@ -11,8 +11,8 @@ export function Onboarding() {
       <button className="skip-btn" onClick={() => game.skipOnboarding()}>
         {t.onboarding.skip}
       </button>
-      {!ob.caption && <p className="ob-welcome">{t.onboarding.welcome}</p>}
-      {ob.caption && (
+      {ob.phase === 'welcome' && <p className="ob-welcome">{t.onboarding.welcome}</p>}
+      {ob.phase === 'caption' && (
         <p className="ob-caption" role="status">
           {t.onboarding.caption}
         </p>
