@@ -1,0 +1,20 @@
+name = "murmur"
+compatibility_date = "2026-09-01"
+pages_build_output_dir = "dist"
+
+[vars]
+PROVIDER = "mock"
+JEV_MODEL = ""
+QUESTIONS_PER_REQUEST = "32"
+MAX_IN_FLIGHT = "6"
+DAILY_QUESTION_BUDGET = "200000"
+KILL_SWITCH = "false"
+ALLOWED_ORIGIN = "*"
+
+[[kv_namespaces]]
+binding = "CACHE"
+id = "REPLACE_WITH_CACHE_NAMESPACE_ID"
+
+[[kv_namespaces]]
+binding = "REPLAYS"
+id = "REPLACE_WITH_REPLAYS_NAMESPACE_ID"
