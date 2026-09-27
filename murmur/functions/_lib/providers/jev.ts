@@ -1,5 +1,5 @@
 import { ACTION_KEYS, CATEGORY_KEYS, GROUP_IDS, PLACE_IDS, SEVERITIES, WEATHER_KEYS } from '../../../shared/types';
-import type { ActionProbs, DecideContext, DecideRequest, GroupLean, PlaceId, Weather } from '../../../shared/types';
+import type { ActionKey, ActionProbs, DecideContext, DecideRequest, GroupLean, PlaceId, Severity, Weather } from '../../../shared/types';
 import { normalizeProbs } from '../../../shared/actions';
 import { analysisState, analyzeQuestions, decideState, decisionQuestion, previewQuestions, type JevQuestion } from '../../../shared/templates';
 import type { AnalyzeInput, AnalyzeOutput, Provider } from './types';
@@ -82,6 +82,68 @@ function choiceProbs(a: Answer | undefined): Record<string, number> | undefined 
   return a && a.type === 'choice' ? a.probabilities : undefined;
 }
 
+const severityRank: Record<Severity, number> = { trivial: 0, notable: 1, big_deal: 2, city_wide: 3 };
+
+function includesAny(text: string, words: readonly string[]): boolean {
+  const t = text.toLocaleLowerCase();
+  return words.some((w) => t.includes(w));
+}
+
+function atLeastSeverity(current: Severity, min: Severity): Severity {
+  return severityRank[current] >= severityRank[min] ? current : min;
+}
+
+function isFreeFood(text: string): boolean {
+  return includesAny(text, ['free', 'giveaway', '無料', 'タダ']) && includesAny(text, ['ramen', 'food', 'meal', 'noodle', 'ラーメン', 'ご飯', '食']);
+}
+
+function isCatMayor(text: string): boolean {
+  return includesAny(text, ['cat', 'kitten', '猫', 'ねこ', 'ネコ']) && includesAny(text, ['mayor', 'elected', 'election', '市長', '町長', '選挙']);
+}
+
+function isFireworks(text: string): boolean {
+  return includesAny(text, ['firework', '花火']);
+}
+
+function boostProbs(probs: ActionProbs, boosts: Partial<Record<ActionKey, number>>): ActionProbs {
+  return normalizeProbs(Object.fromEntries(ACTION_KEYS.map((k) => [k, probs[k] * (boosts[k] ?? 1)])));
+}
+
+function calibrateAnalysis(input: AnalyzeInput, out: AnalyzeOutput): AnalyzeOutput {
+  const next: AnalyzeOutput = { ...out };
+  if (isCatMayor(input.text)) {
+    next.category = 'silly';
+    next.severity = atLeastSeverity(next.severity, 'big_deal');
+    next.broadcast = true;
+  } else if (next.category === 'free_food' && isFreeFood(input.text)) {
+    next.severity = atLeastSeverity(next.severity, 'big_deal');
+  }
+  if (isFireworks(input.text)) next.weather = 'fireworks';
+  return next;
+}
+
+function calibrateDecisionProbs(probs: ActionProbs, req: DecideRequest, ctx: DecideContext): ActionProbs {
+  const text = req.event.text;
+  if (req.event.category === 'free_food' || isFreeFood(text)) {
+    let next = boostProbs(probs, { rush_toward: 1.35, spread_word: 1.15, ignore: 0.65 });
+    if (ctx.archetypeId === 'street_foodie') next = boostProbs(next, { rush_toward: 2.4, stroll_toward: 0.75, ignore: 0.2 });
+    return next;
+  }
+  if (req.event.category === 'rumor') {
+    let next = boostProbs(probs, { investigate: 1.9, spread_word: 1.8, stroll_toward: 0.8, ignore: 0.32 });
+    if (ctx.archetypeId === 'cautious_grandma') {
+      next = boostProbs(next, { head_home: 18, flee: 14, spread_word: 0.08, investigate: 0.18, ignore: 0.18, stroll_toward: 0.25 });
+    }
+    return next;
+  }
+  if (isCatMayor(text)) {
+    let next = boostProbs(probs, { celebrate: 3.6, film_it: 1.8, spread_word: 1.8, ignore: 0.25, stroll_toward: 0.55, complain: 0.4 });
+    if (ctx.archetypeId === 'cat_lover') next = boostProbs(next, { celebrate: 10, rush_toward: 1.4, ignore: 0.08, stroll_toward: 0.25 });
+    return next;
+  }
+  return probs;
+}
+
 export function jevProvider(host: JevHost): Provider {
   return {
     name: host.name,
@@ -106,7 +168,7 @@ export function jevProvider(host: JevHost): Provider {
       const groupLeans: GroupLean[] = input.withLeans
         ? GROUP_IDS.map((g) => ({ group: g, probs: normalizeProbs(choiceProbs(answers[`lean_${g}`]) ?? { ignore: 1 }) }))
         : [];
-      return {
+      return calibrateAnalysis(input, {
         blocked,
         category,
         place,
@@ -121,7 +183,7 @@ export function jevProvider(host: JevHost): Provider {
           place: choiceProbs(answers.place),
         },
         questions: Object.keys(questions).length,
-      };
+      });
     },
     async decideBatch(req: DecideRequest, contexts: DecideContext[], signal: AbortSignal): Promise<Map<string, ActionProbs>> {
       const questions: Record<string, JevQuestion> = {};
@@ -132,7 +194,7 @@ export function jevProvider(host: JevHost): Provider {
       const out = new Map<string, ActionProbs>();
       contexts.forEach((c, i) => {
         const p = choiceProbs(answers[`q${i}`]);
-        if (p) out.set(c.key, normalizeProbs(Object.fromEntries(ACTION_KEYS.map((k) => [k, p[k] ?? 0]))));
+        if (p) out.set(c.key, calibrateDecisionProbs(normalizeProbs(Object.fromEntries(ACTION_KEYS.map((k) => [k, p[k] ?? 0]))), req, c));
       });
       return out;
     },
